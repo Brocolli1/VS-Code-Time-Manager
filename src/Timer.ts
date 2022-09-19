@@ -10,18 +10,18 @@ enum timerType {
 export class Timer {
 	private config = vscode.workspace.getConfiguration("BreakTime");
 	private redText: number = 0;
-	private endMessages: string[] = ["get up and do some stretching!!", "break time!"];
 
 	private myType: timerType = timerType.Short; 
 
 	private intervalID: any = undefined;
-	private currentTime: number = 0; //seconds
+	private currentTime: number = 0;
 	private running: boolean = false;
 
 	private statusBarItem: vscode.StatusBarItem;
 	private statusBarTxt: string;
 
 	private paused: boolean = false;
+	private onBreak: boolean = false;
 
 	constructor(statusBarItem: vscode.StatusBarItem, statusBarTxt: string) {
 		this.statusBarItem = statusBarItem;
@@ -29,7 +29,7 @@ export class Timer {
 	}
 
 	public message() {
-		vscode.window.showInformationMessage(`Time for a break!`, "Take a break", "Ignore").then((selectedItem) => {
+		vscode.window.showInformationMessage(`Time for a break!`, "Take a break", "Ignore").then((selectedItem: string) => {
 			if(selectedItem == "Take a break")
 				this.takeBreak();
 			else
@@ -44,15 +44,21 @@ export class Timer {
 
 		this.intervalID = setInterval(() => { 
 			if (this.currentTime <= 0) {
-				//break time!
-				this.resetTimer();
-				this.message()
+				if(!this.onBreak)
+				{
+					this.resetTimer();
+					this.message()
+				}
+				else 
+				{
+				//	this.panel.dispose();
+				}
 			} else if (!this.paused) {
 				//decrease time and update the text in UI
 				this.currentTime--;
 				//check settings about last minute to display or not
-				if (this.currentTime <= 60 && this.config.showLastMinute === false) {
-					this.statusBarItem.text = `Break in: <1 min`;
+				if (this.onBreak) {
+					this.statusBarItem.text = `On break for the next: ${this.currentTime}`;
 				} else {
 					this.statusBarItem.text = `Break in: ${this.secToTime(this.currentTime)}`;
 				}
@@ -109,9 +115,61 @@ export class Timer {
 	}
 
 	private takeBreak() {
+		this.onBreak = true;
 		this.statusBarItem.color = "green";
 		this.start(60);
+		const panel = vscode.window.createWebviewPanel(
+			'exercise',
+			'Exercise',
+			vscode.ViewColumn.One,
+			{enableScripts: true}
+		  );
+		  panel.webview.html = this.getWebviewContent();
+		  panel.webview.onDidReceiveMessage(
+			  (			message: { command: any; }) => {
+			  switch (message.command) {
+				case 'ignore':
+				  //panel.dispose();
+				  this.statusBarItem.color = "purple";
+				  return;
+			  }
+			},
+			undefined,
+			vscode.ExtensionContext.subscriptions
+		  );
 	}
+
+
+	private getWebviewContent() {
+		return `<!DOCTYPE html>
+	  <html lang="en">
+		  <head>
+			<meta charset="UTF-8">
+			  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+			  <title>Cat Coding</title>
+		  </head>
+		  <body>
+		  <image id="exerciseImg" width="420" height="315"
+		  	src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Triceps_Stretch.gif">
+		  </image>
+		  <br></br>
+		  <button name="nextButton" type="button" onclick="nextExercise();">Skip this exercise</button>
+		  <button name="ignoreBreak" type="button" onclick="ignore();">Ignore break</button>
+		  <script>
+		  		const vscode = acquireVsCodeApi();
+				function nextExercise() {
+					document.getElementById('exerciseImg').src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Neck_Stretch.gif";
+				}
+				function ignore(){
+					vscode.postMessage({
+                        command: 'ignore',
+                        text: 'ignore'
+                    })
+				}
+		  </script>
+		  </body>
+	  </html>`;
+	  }
 
 	private resetTimer() {
 		this.statusBarItem.text = this.statusBarTxt;

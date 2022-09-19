@@ -8,16 +8,12 @@ function generateAction(timer : Timer, timerCommandId : string, subscriptions : 
 			const quickPick = vscode.window.createQuickPick();
 
 			const quickPickItems: vscode.QuickPickItem[] = [
+				{ label: "0 secs" },
 				{ label: "1 min" },
 				{ label: "5 min" },
 				{ label: "10 min" },
 				{ label: "20 min" },
-				{ label: "25 min" },
-				{ label: "30 min" },
-				{ label: "40 min" },
-				{ label: "60 min" },
-				{ label: "90 min" },
-				{ label: "120 min" },
+
 			];
 			//if the timer is running add an item to stop it
 			const stopLabel = "STOP";
@@ -38,8 +34,13 @@ function generateAction(timer : Timer, timerCommandId : string, subscriptions : 
 			//user picked
 			quickPick.onDidChangeSelection(([item]) => {
 				if (item) {
+					var time; 
+					if(item.label="0 secs") {
+						time = 5;
+					}
+					else
 					//set the time picked and start the timer
-					let time = Number(item.label.split(" ")[0]) * 60;
+						time = Number(item.label.split(" ")[0]) * 60;
 					if (item.label === stopLabel) {
 						time = 0;
 					}
@@ -63,6 +64,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext) {
 	const config = vscode.workspace.getConfiguration("BreakTime"); //user configuration
 
 	if (config.enable === true) {
+
 		const timerStatusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 299);
 		const timerStatusBarTxt: string = `Next short break in: `;
 
@@ -92,5 +94,11 @@ export function activate({ subscriptions }: vscode.ExtensionContext) {
 	}
 }
 
+//https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Hamstring_Stretch.gif
+//https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Neck_Stretch.gif
+
+
+
 // this method is called when your extension is deactivated
 export function deactivate() {}
+
