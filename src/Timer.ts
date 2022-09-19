@@ -118,58 +118,8 @@ export class Timer {
 		this.onBreak = true;
 		this.statusBarItem.color = "green";
 		this.start(60);
-		const panel = vscode.window.createWebviewPanel(
-			'exercise',
-			'Exercise',
-			vscode.ViewColumn.One,
-			{enableScripts: true}
-		  );
-		  panel.webview.html = this.getWebviewContent();
-		  panel.webview.onDidReceiveMessage(
-			  (			message: { command: any; }) => {
-			  switch (message.command) {
-				case 'ignore':
-				  //panel.dispose();
-				  this.statusBarItem.color = "purple";
-				  return;
-			  }
-			},
-			undefined,
-			vscode.ExtensionContext.subscriptions
-		  );
+		vscode.commands.executeCommand('exercise.start');
 	}
-
-
-	private getWebviewContent() {
-		return `<!DOCTYPE html>
-	  <html lang="en">
-		  <head>
-			<meta charset="UTF-8">
-			  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-			  <title>Cat Coding</title>
-		  </head>
-		  <body>
-		  <image id="exerciseImg" width="420" height="315"
-		  	src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Triceps_Stretch.gif">
-		  </image>
-		  <br></br>
-		  <button name="nextButton" type="button" onclick="nextExercise();">Skip this exercise</button>
-		  <button name="ignoreBreak" type="button" onclick="ignore();">Ignore break</button>
-		  <script>
-		  		const vscode = acquireVsCodeApi();
-				function nextExercise() {
-					document.getElementById('exerciseImg').src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Neck_Stretch.gif";
-				}
-				function ignore(){
-					vscode.postMessage({
-                        command: 'ignore',
-                        text: 'ignore'
-                    })
-				}
-		  </script>
-		  </body>
-	  </html>`;
-	  }
 
 	private resetTimer() {
 		this.statusBarItem.text = this.statusBarTxt;

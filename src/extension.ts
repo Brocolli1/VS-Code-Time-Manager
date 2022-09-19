@@ -64,6 +64,41 @@ export function activate({ subscriptions }: vscode.ExtensionContext) {
 	const config = vscode.workspace.getConfiguration("BreakTime"); //user configuration
 
 	if (config.enable === true) {
+		let currentPanel: vscode.WebviewPanel | undefined = undefined;
+		vscode.commands.registerCommand('exercise.start', () => {
+			if (currentPanel) {
+			  currentPanel.reveal(vscode.ViewColumn.One);
+			} else {
+			  currentPanel = vscode.window.createWebviewPanel(
+				'exercise',
+				'Exercise',
+				vscode.ViewColumn.One,
+				{
+				  enableScripts: true
+				}
+			  );
+			  currentPanel.webview.html = getWebviewContent();
+			  currentPanel.onDidDispose(
+				() => {
+				  currentPanel = undefined;
+				},
+				undefined,
+				subscriptions
+			  );
+
+			  currentPanel.webview.onDidReceiveMessage(
+				(			message: { command: any; }) => {
+				switch (message.command) {
+				  case 'ignore':
+					currentPanel.dispose();
+					return;
+				}
+			  },
+			  undefined,
+			  vscode.ExtensionContext.subscriptions
+			);
+			}
+		  })
 
 		const timerStatusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 299);
 		const timerStatusBarTxt: string = `Next short break in: `;
@@ -97,7 +132,36 @@ export function activate({ subscriptions }: vscode.ExtensionContext) {
 //https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Hamstring_Stretch.gif
 //https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Neck_Stretch.gif
 
-
+function getWebviewContent() {
+	return `<!DOCTYPE html>
+  <html lang="en">
+	  <head>
+		<meta charset="UTF-8">
+		  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		  <title>Cat Coding</title>
+	  </head>
+	  <body>
+	  <image id="exerciseImg" width="420" height="315"
+		  src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Triceps_Stretch.gif">
+	  </image>
+	  <br></br>
+	  <button name="nextButton" type="button" onclick="nextExercise();">Skip this exercise</button>
+	  <button name="ignoreBreak" type="button" onclick="ignore();">Ignore break</button>
+	  <script>
+			  const vscode = acquireVsCodeApi();
+			function nextExercise() {
+				document.getElementById('exerciseImg').src="https://images-prod.healthline.com/hlcmsresource/images/topic_centers/Fitness-Exercise/400x400_Stretches_to_Do_at_Work_Every_Day_Neck_Stretch.gif";
+			}
+			function ignore(){
+				vscode.postMessage({
+					command: 'ignore',
+					text: 'ignore'
+				})
+			}
+	  </script>
+	  </body>
+  </html>`;
+  }
 
 // this method is called when your extension is deactivated
 export function deactivate() {}
